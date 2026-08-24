@@ -18,6 +18,11 @@ requests:
   retry_delay_seconds: 2.0
   request_delay_seconds: 0.0
 
+batch:
+  job_file: data/gemini_eli5_batch_job.json
+  display_name: eli5-math-1000-v1
+  poll_interval_seconds: 30
+
 prompt:
   version: eli5_math_v1
   style_instruction: |-

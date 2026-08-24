@@ -96,14 +96,81 @@ uv run python generate_eli5.py \
   --output-file data/math_eli5_smoke.jsonl
 ```
 
-Then generate all 1,000 rows:
+Submit all 1,000 rows with the asynchronous Gemini Batch API:
 
 ```bash
-uv run python generate_eli5.py --config teacher_config.yaml
+uv run python generate_eli5_batch.py submit --config teacher_config.yaml
 ```
 
-The script uses `load_dotenv` to read `GOOGLE_API_KEY`. It reads the gold answer
-directly from the nlile dataset `answer` field. Gemini returns structured JSON.
-Math-Verify checks the generated answer before the row is saved. The script
-saves each successful row immediately, retries temporary or validation failures,
-supports resume, and writes unresolved failures to a separate JSONL file.
+The submit command saves the Gemini job name in
+`data/gemini_eli5_batch_job.json`. Check its state and collect it after it
+finishes:
+
+```bash
+uv run python generate_eli5_batch.py status --config teacher_config.yaml
+uv run python generate_eli5_batch.py collect --config teacher_config.yaml
+```
+
+To keep one terminal open until the job finishes, use `wait` instead of
+`status` and `collect`. The Batch API processes the requests asynchronously and
+costs 50% of the standard request price. The 1,000 prompts fit in one inline
+batch below the 20 MB limit.
+
+Both teacher scripts use `load_dotenv` to read `GOOGLE_API_KEY`. They read the
+gold answer directly from the nlile dataset `answer` field. Gemini returns
+structured JSON. Math-Verify checks each generated answer before the row is
+saved. Batch collection is resumable and writes invalid responses to the
+configured failure JSONL file. The direct script remains available for small
+tests and retries.
+
+## Controlled SFT comparison
+
+`sft_train.py` supports two full-parameter fine-tuning conditions from one
+shared `sft_config.yaml`:
+
+- `original`: the official MATH solution is the target.
+- `eli5`: the accepted Gemini ELI5 solution and boxed gold answer are the
+  target.
+
+Both conditions use the same 989 accepted sample IDs, the same 940 training
+rows, the same 49 validation rows, and the same optimizer settings. The student
+input contains only the problem. MATH-500 is not used during training or model
+selection.
+
+Validate the comparison without loading or training the model:
+
+```bash
+runpod-venv/bin/python sft_train.py --config sft_config.yaml --validate-only
+```
+
+The RunPod environment needs Accelerate in addition to the benchmark packages:
+
+```bash
+uv pip install --python runpod-venv/bin/python "accelerate>=1.10.0,<2"
+```
+
+On the NVIDIA RunPod server, train the official-solution condition:
+
+```bash
+runpod-venv/bin/python sft_train.py --config sft_config.yaml --condition original
+```
+
+Train the ELI5 condition:
+
+```bash
+runpod-venv/bin/python sft_train.py --config sft_config.yaml --condition eli5
+```
+
+The default setup uses BF16 full-parameter training, SDPA attention, gradient
+checkpointing, a per-device batch size of 2, eight accumulation steps, and an
+effective batch size of 16 on one GPU. Checkpoints and final models go to
+separate directories under `outputs/`. Use the same configuration for both
+conditions. If memory is insufficient, set the batch size to 1 and accumulation
+steps to 16 before running either condition.
+
+After both runs finish, evaluate them with separate MATH-500 result directories:
+
+```bash
+runpod-venv/bin/python benchmark_math500.py --config benchmark_sft_original.yaml
+runpod-venv/bin/python benchmark_math500.py --config benchmark_sft_eli5.yaml
+```

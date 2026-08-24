@@ -25,6 +25,23 @@ def test_benchmark_config_is_valid():
 
 
 @pytest.mark.parametrize(
+    ("path", "model_path"),
+    [
+        (
+            "benchmark_sft_original.yaml",
+            "outputs/qwen3_0.6b_sft_original/final",
+        ),
+        ("benchmark_sft_eli5.yaml", "outputs/qwen3_0.6b_sft_eli5/final"),
+    ],
+)
+def test_sft_benchmark_configs_are_isolated(path, model_path):
+    config = load_config(Path(path))
+    assert config["model"]["name"] == model_path
+    assert config["evaluation"]["dataset_path"] == "data/math_500_test.jsonl"
+    assert config["evaluation"]["output_dir"] != "results/qwen3_0.6b_base_math500_cuda"
+
+
+@pytest.mark.parametrize(
     ("gold", "response"),
     [
         (r"\frac{1}{2}", r"The answer is $\boxed{0.5}$"),

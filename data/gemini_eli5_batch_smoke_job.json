@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "job_name": "batches/knz8utodao8pza4t4hhp27zqvx8k5hpaixby",
+  "state": "JOB_STATE_SUCCEEDED",
+  "submitted_at": "2026-08-24T14:17:56.846601+00:00",
+  "updated_at": "2026-08-24T14:20:44.588351+00:00",
+  "model": "gemini-3.5-flash",
+  "config_path": "/Users/tashi/Desktop/papers/eli5-rl/teacher_config.yaml",
+  "input_file": "/Users/tashi/Desktop/papers/eli5-rl/data/math_train_1000.jsonl",
+  "output_file": "/Users/tashi/Desktop/papers/eli5-rl/data/math_train_1000_eli5.jsonl",
+  "failure_file": "/Users/tashi/Desktop/papers/eli5-rl/data/math_train_1000_eli5_failures.jsonl",
+  "request_count": 1,
+  "request_bytes": 2356,
+  "samples": [
+    {
+      "sample_id": "math_train_0000_29bc74fba8ab",
+      "source_index": 0
+    }
+  ],
+  "collected_sample_ids": [
+    "math_train_0000_29bc74fba8ab"
+  ]
+}

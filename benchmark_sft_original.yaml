@@ -1,0 +1,28 @@
+seed: 42
+
+model:
+  name: outputs/qwen3_0.6b_sft_original/final
+  device: auto
+  dtype: auto
+  attention_implementation: sdpa
+  allow_tf32: true
+
+evaluation:
+  dataset_path: data/math_500_test.jsonl
+  output_dir: results/qwen3_0.6b_sft_original_math500
+  max_samples: null
+  start_index: 0
+  batch_size: 16
+  resume: true
+
+prompt:
+  style: minerva_4shot
+  fewshot_path: data/math500_minerva_4shot.jsonl
+
+generation:
+  max_new_tokens: 1024
+  do_sample: false
+  temperature: 0.0
+  stop_strings:
+    - "Problem:"
+  repetition_penalty: 1.0
