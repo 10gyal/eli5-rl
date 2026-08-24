@@ -38,7 +38,7 @@ uv run python benchmark_math500.py --config benchmark_config.yaml
 
 On an NVIDIA GPU, `device: auto` selects CUDA. The default batch size is 16
 for a 24 GB GPU. The loader uses BF16 on supported GPUs, SDPA attention, and
-TF32 support. The project pins PyTorch 2.11.0 and uses the CUDA 12.8 PyTorch
+TF32 support. The project pins PyTorch 2.8.0 and uses the CUDA 12.8 PyTorch
 package on Linux. After a new checkout, run `uv sync`, then confirm the setup:
 
 ```bash
