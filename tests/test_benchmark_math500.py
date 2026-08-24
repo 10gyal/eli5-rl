@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from benchmark_math500 import (
+    batches,
     build_prompt,
     build_summary,
     extract_final_answer,
@@ -20,6 +21,7 @@ def test_benchmark_config_is_valid():
     assert config["model"]["name"] == "Qwen/Qwen3-0.6B-Base"
     assert config["prompt"]["style"] == "minerva_4shot"
     assert config["generation"]["do_sample"] is False
+    assert config["evaluation"]["batch_size"] == 16
 
 
 @pytest.mark.parametrize(
@@ -57,6 +59,14 @@ def test_build_prompt_uses_four_examples_and_completion_format():
 
     assert prompt.count("Problem:\n") == 5
     assert prompt.endswith("Problem:\ntarget\n\nSolution:")
+
+
+def test_batches_preserve_order_and_final_partial_batch():
+    assert batches(list(range(10)), 4) == [
+        [0, 1, 2, 3],
+        [4, 5, 6, 7],
+        [8, 9],
+    ]
 
 
 def test_load_completed_keeps_latest_row(tmp_path):

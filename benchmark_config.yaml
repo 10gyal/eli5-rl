@@ -5,12 +5,17 @@ model:
   revision: da87bfb608c14b7cf20ba1ce41287e8de496c0cd
   device: auto
   dtype: auto
+  attention_implementation: sdpa
+  allow_tf32: true
 
 evaluation:
   dataset_path: data/math_500_test.jsonl
-  output_dir: results/qwen3_0.6b_base_math500
+  output_dir: results/qwen3_0.6b_base_math500_cuda
   max_samples: null
   start_index: 0
+  # A batch size of 16 is conservative for this 0.6B model on a 24 GB GPU.
+  # Reduce this value if CUDA reports an out-of-memory error.
+  batch_size: 16
   resume: true
 
 prompt:

@@ -36,6 +36,14 @@ uv sync
 uv run python benchmark_math500.py --config benchmark_config.yaml
 ```
 
+On an NVIDIA GPU, `device: auto` selects CUDA. The default batch size is 16
+for a 24 GB GPU. The loader uses BF16 on supported GPUs, SDPA attention, and
+TF32 support. If CUDA reports an out-of-memory error, reduce
+`evaluation.batch_size` in `benchmark_config.yaml` to 8 or 4 and run the same
+command again. Completed problems are not repeated. CUDA results are written
+to `results/qwen3_0.6b_base_math500_cuda/` so they do not mix with earlier MPS
+results.
+
 Run a short smoke test in a separate output directory:
 
 ```bash

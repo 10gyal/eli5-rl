@@ -51,6 +51,9 @@ def load_config(path: Path) -> dict[str, Any]:
     start_index = config["evaluation"].get("start_index", 0)
     if not isinstance(start_index, int) or start_index < 0:
         raise ValueError("evaluation.start_index must be zero or positive.")
+    batch_size = config["evaluation"].get("batch_size", 1)
+    if not isinstance(batch_size, int) or batch_size <= 0:
+        raise ValueError("evaluation.batch_size must be positive.")
     if config["generation"].get("max_new_tokens", 0) <= 0:
         raise ValueError("generation.max_new_tokens must be positive.")
     return config
@@ -60,6 +63,11 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
     """Read a JSON Lines file."""
     with path.open(encoding="utf-8") as stream:
         return [json.loads(line) for line in stream if line.strip()]
+
+
+def batches(items: list[Any], batch_size: int) -> list[list[Any]]:
+    """Split items into ordered batches."""
+    return [items[index : index + batch_size] for index in range(0, len(items), batch_size)]
 
 
 def build_prompt(
@@ -213,14 +221,24 @@ def run_benchmark(
     set_seed(seed)
     device = choose_device(config["model"].get("device", "auto"), torch)
     dtype = choose_dtype(config["model"].get("dtype", "auto"), device, torch)
+    if device == "cuda" and config["model"].get("allow_tf32", True):
+        torch.backends.cuda.matmul.allow_tf32 = True
     model_name = config["model"]["name"]
     revision = config["model"].get("revision")
     print(f"Loading {model_name} on {device} with {dtype}...")
     tokenizer = AutoTokenizer.from_pretrained(model_name, revision=revision)
+    tokenizer.padding_side = "left"
+    if tokenizer.pad_token_id is None:
+        tokenizer.pad_token_id = tokenizer.eos_token_id
+    model_load_args: dict[str, Any] = {}
+    attention_implementation = config["model"].get("attention_implementation")
+    if attention_implementation:
+        model_load_args["attn_implementation"] = attention_implementation
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         revision=revision,
         dtype=dtype,
+        **model_load_args,
     ).to(device)
     model.eval()
 
@@ -252,41 +270,63 @@ def run_benchmark(
     started = time.perf_counter()
     file_mode = "a" if completed else "w"
     with results_path.open(file_mode, encoding="utf-8") as result_stream:
+        pending: list[tuple[int, dict[str, Any]]] = []
         for position, example in enumerate(rows, start=1):
-            unique_id = str(example["unique_id"])
-            if unique_id in completed:
-                print(f"[{position}/{len(rows)}] Skip {unique_id}")
-                continue
+            if str(example["unique_id"]) in completed:
+                print(f"[{position}/{len(rows)}] Skip {example['unique_id']}")
+            else:
+                pending.append((position, example))
 
-            prompt = build_prompt(example["problem"], fewshot_examples)
-            inputs = tokenizer(prompt, return_tensors="pt").to(device)
-            sample_started = time.perf_counter()
-            with torch.inference_mode():
-                generated = model.generate(
-                    **inputs,
-                    **generation_args,
-                    pad_token_id=tokenizer.eos_token_id,
-                    tokenizer=tokenizer,
+        batch_size = evaluation.get("batch_size", 1)
+        for batch in batches(pending, batch_size):
+            prompts = [
+                build_prompt(example["problem"], fewshot_examples)
+                for _, example in batch
+            ]
+            inputs = tokenizer(prompts, return_tensors="pt", padding=True).to(device)
+            batch_started = time.perf_counter()
+            try:
+                with torch.inference_mode():
+                    generated = model.generate(
+                        **inputs,
+                        **generation_args,
+                        pad_token_id=tokenizer.pad_token_id,
+                        tokenizer=tokenizer,
+                    )
+            except torch.OutOfMemoryError as error:
+                raise RuntimeError(
+                    "CUDA ran out of memory. Reduce evaluation.batch_size in "
+                    "benchmark_config.yaml and resume the run."
+                ) from error
+            batch_elapsed = time.perf_counter() - batch_started
+            input_width = inputs["input_ids"].shape[1]
+
+            for batch_index, (position, example) in enumerate(batch):
+                unique_id = str(example["unique_id"])
+                token_ids = generated[batch_index, input_width:].tolist()
+                if tokenizer.eos_token_id in token_ids:
+                    token_ids = token_ids[: token_ids.index(tokenizer.eos_token_id)]
+                response = tokenizer.decode(token_ids, skip_special_tokens=True).strip()
+                correct, parsed_gold, parsed_prediction = score_answer(
+                    str(example["answer"]), response
                 )
-            output_ids = generated[0, inputs["input_ids"].shape[1] :]
-            response = tokenizer.decode(output_ids, skip_special_tokens=True).strip()
-            correct, parsed_gold, parsed_prediction = score_answer(
-                str(example["answer"]), response
-            )
-            result = {
-                **example,
-                "response": response,
-                "parsed_gold": parsed_gold,
-                "parsed_prediction": parsed_prediction,
-                "correct": correct,
-                "input_tokens": int(inputs["input_ids"].shape[1]),
-                "output_tokens": int(output_ids.shape[0]),
-                "elapsed_seconds": time.perf_counter() - sample_started,
-            }
-            result_stream.write(json.dumps(result, ensure_ascii=False) + "\n")
-            result_stream.flush()
-            completed[unique_id] = result
-            print(f"[{position}/{len(rows)}] {unique_id}: {'correct' if correct else 'wrong'}")
+                result = {
+                    **example,
+                    "response": response,
+                    "parsed_gold": parsed_gold,
+                    "parsed_prediction": parsed_prediction,
+                    "correct": correct,
+                    "input_tokens": int(
+                        inputs["attention_mask"][batch_index].sum().item()
+                    ),
+                    "output_tokens": len(token_ids),
+                    "batch_elapsed_seconds": batch_elapsed,
+                }
+                result_stream.write(json.dumps(result, ensure_ascii=False) + "\n")
+                result_stream.flush()
+                completed[unique_id] = result
+                status = "correct" if correct else "wrong"
+                print(f"[{position}/{len(rows)}] {unique_id}: {status}")
 
     selected_ids = {str(row["unique_id"]) for row in rows}
     selected_results = [row for key, row in completed.items() if key in selected_ids]
