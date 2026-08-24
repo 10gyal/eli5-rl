@@ -38,7 +38,14 @@ uv run python benchmark_math500.py --config benchmark_config.yaml
 
 On an NVIDIA GPU, `device: auto` selects CUDA. The default batch size is 16
 for a 24 GB GPU. The loader uses BF16 on supported GPUs, SDPA attention, and
-TF32 support. If CUDA reports an out-of-memory error, reduce
+TF32 support. The project pins PyTorch 2.11.0 and uses the CUDA 12.8 PyTorch
+package on Linux. After a new checkout, run `uv sync`, then confirm the setup:
+
+```bash
+uv run python -c "import torch; print(torch.__version__, torch.version.cuda, torch.cuda.is_available())"
+```
+
+The last value must be `True`. If CUDA reports an out-of-memory error, reduce
 `evaluation.batch_size` in `benchmark_config.yaml` to 8 or 4 and run the same
 command again. Completed problems are not repeated. CUDA results are written
 to `results/qwen3_0.6b_base_math500_cuda/` so they do not mix with earlier MPS
