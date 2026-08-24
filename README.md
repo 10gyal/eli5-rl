@@ -4,10 +4,10 @@
 
 The setup creates two JSON Lines files in `data/`:
 
-- `math_train_1000.jsonl`: 1,000 seeded samples from all MATH train subjects.
-- `math_500_test.jsonl`: all 500 MATH-500 final-evaluation samples.
+- `math_train_1000.jsonl`: 1,000 seeded samples from the nlile MATH train split.
+- `math_500_test.jsonl`: the fixed 500-row nlile MATH test split (MATH-500).
 
-Change the sample sizes, seed, output names, or subject list in `config.yaml`.
+Change the sample sizes, seed, or output names in `config.yaml`.
 The source revisions are fixed to exact commits for reproducible downloads.
 Then run:
 
@@ -57,3 +57,34 @@ The benchmark writes `results.jsonl` after each problem. It can resume an
 interrupted run. It also writes `summary.json` with total accuracy and accuracy
 by subject and difficulty level. Scoring uses Math-Verify for symbolic
 mathematical equivalence.
+
+## Gemini ELI5 teacher data
+
+Put the Gemini API key in `.env`:
+
+```text
+GOOGLE_API_KEY=your-key
+```
+
+Edit `teacher_config.yaml` to change the model, thinking level, output paths,
+retry settings, or sample range. Run one paid smoke-test request first:
+
+```bash
+uv sync
+uv run python generate_eli5.py \
+  --config teacher_config.yaml \
+  --max-samples 1 \
+  --output-file data/math_eli5_smoke.jsonl
+```
+
+Then generate all 1,000 rows:
+
+```bash
+uv run python generate_eli5.py --config teacher_config.yaml
+```
+
+The script uses `load_dotenv` to read `GOOGLE_API_KEY`. It reads the gold answer
+directly from the nlile dataset `answer` field. Gemini returns structured JSON.
+Math-Verify checks the generated answer before the row is saved. The script
+saves each successful row immediately, retries temporary or validation failures,
+supports resume, and writes unresolved failures to a separate JSONL file.

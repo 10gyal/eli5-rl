@@ -1,0 +1,97 @@
+{
+  "model": {
+    "name": "Qwen/Qwen3-0.6B-Base",
+    "revision": "da87bfb608c14b7cf20ba1ce41287e8de496c0cd",
+    "device": "auto",
+    "dtype": "auto"
+  },
+  "seed": 42,
+  "evaluation": {
+    "dataset_path": "data/math_500_test.jsonl",
+    "output_dir": "results/qwen3_0.6b_base_math500",
+    "max_samples": null,
+    "start_index": 0,
+    "resume": true
+  },
+  "prompt": {
+    "style": "minerva_4shot",
+    "fewshot_path": "data/math500_minerva_4shot.jsonl"
+  },
+  "generation": {
+    "max_new_tokens": 1024,
+    "do_sample": false,
+    "temperature": 0.0,
+    "stop_strings": [
+      "Problem:"
+    ],
+    "repetition_penalty": 1.0
+  },
+  "correct": 149,
+  "total": 500,
+  "accuracy": 0.298,
+  "elapsed_seconds": 2963.3503812080016,
+  "by_subject": {
+    "Algebra": {
+      "correct": 56,
+      "total": 124,
+      "accuracy": 0.45161290322580644
+    },
+    "Counting & Probability": {
+      "correct": 10,
+      "total": 38,
+      "accuracy": 0.2631578947368421
+    },
+    "Geometry": {
+      "correct": 9,
+      "total": 41,
+      "accuracy": 0.21951219512195122
+    },
+    "Intermediate Algebra": {
+      "correct": 16,
+      "total": 97,
+      "accuracy": 0.16494845360824742
+    },
+    "Number Theory": {
+      "correct": 12,
+      "total": 62,
+      "accuracy": 0.1935483870967742
+    },
+    "Prealgebra": {
+      "correct": 38,
+      "total": 82,
+      "accuracy": 0.4634146341463415
+    },
+    "Precalculus": {
+      "correct": 8,
+      "total": 56,
+      "accuracy": 0.14285714285714285
+    }
+  },
+  "by_level": {
+    "1": {
+      "correct": 31,
+      "total": 43,
+      "accuracy": 0.7209302325581395
+    },
+    "2": {
+      "correct": 49,
+      "total": 90,
+      "accuracy": 0.5444444444444444
+    },
+    "3": {
+      "correct": 39,
+      "total": 105,
+      "accuracy": 0.37142857142857144
+    },
+    "4": {
+      "correct": 23,
+      "total": 128,
+      "accuracy": 0.1796875
+    },
+    "5": {
+      "correct": 7,
+      "total": 134,
+      "accuracy": 0.05223880597014925
+    }
+  }
+}

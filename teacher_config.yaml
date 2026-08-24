@@ -1,0 +1,28 @@
+seed: 42
+
+teacher:
+  model: gemini-3.5-flash
+  thinking_level: medium
+  max_output_tokens: 8192
+
+data:
+  input_file: data/math_train_1000.jsonl
+  output_file: data/math_train_1000_eli5.jsonl
+  failure_file: data/math_train_1000_eli5_failures.jsonl
+  start_index: 0
+  max_samples: null
+  resume: true
+
+requests:
+  max_attempts: 3
+  retry_delay_seconds: 2.0
+  request_delay_seconds: 0.0
+
+prompt:
+  version: eli5_math_v1
+  style_instruction: |-
+    Explain the solution for a beginner who is intelligent but new to this
+    type of mathematics. Use plain language, small logical steps, and helpful
+    intuition. Define uncommon terms when they first appear. Keep all
+    mathematical statements correct. Do not omit a step that is needed to
+    reach the supplied answer.
