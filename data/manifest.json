@@ -1,0 +1,38 @@
+{
+  "seed": 42,
+  "config": "/Users/tashi/Desktop/papers/eli5-rl/config.yaml",
+  "outputs": {
+    "post_training": {
+      "path": "/Users/tashi/Desktop/papers/eli5-rl/data/math_train_1000.jsonl",
+      "dataset": "HuggingFaceH4/MATH",
+      "revision": "9bbe1fc38f097a38e3bdf5bbec8d6feee21318c9",
+      "split": "train",
+      "rows": 1000,
+      "columns": [
+        "problem",
+        "level",
+        "type",
+        "solution"
+      ],
+      "fingerprint": "9f34dc30e0fe92fa",
+      "sha256": "c11b6bf10a2a555c26c56ea3be449bbbf81cfde78ad2d1ce366d87ce08a439bd"
+    },
+    "final_eval": {
+      "path": "/Users/tashi/Desktop/papers/eli5-rl/data/math_500_test.jsonl",
+      "dataset": "HuggingFaceH4/MATH-500",
+      "revision": "6e4ed1a2a79af7d8630a6b768ec859cb5af4d3be",
+      "split": "test",
+      "rows": 500,
+      "columns": [
+        "problem",
+        "solution",
+        "answer",
+        "subject",
+        "level",
+        "unique_id"
+      ],
+      "fingerprint": "f3124375297911ba",
+      "sha256": "35dc41080a3680858b27fa7e0533d2d547825316fc5dafe5d316f4ccc5a06132"
+    }
+  }
+}

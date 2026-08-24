@@ -1,0 +1,27 @@
+seed: 42
+
+model:
+  name: Qwen/Qwen3-0.6B-Base
+  revision: da87bfb608c14b7cf20ba1ce41287e8de496c0cd
+  device: auto
+  dtype: auto
+
+evaluation:
+  dataset_path: data/math_500_test.jsonl
+  output_dir: results/qwen3_0.6b_base_math500
+  max_samples: null
+  start_index: 0
+  resume: true
+
+prompt:
+  # This follows the LM Evaluation Harness minerva_math500 task.
+  style: minerva_4shot
+  fewshot_path: data/math500_minerva_4shot.jsonl
+
+generation:
+  max_new_tokens: 1024
+  do_sample: false
+  temperature: 0.0
+  stop_strings:
+    - "Problem:"
+  repetition_penalty: 1.0
