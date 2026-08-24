@@ -51,6 +51,18 @@ command again. Completed problems are not repeated. CUDA results are written
 to `results/qwen3_0.6b_base_math500_cuda/` so they do not mix with earlier MPS
 results.
 
+On a RunPod image that already has PyTorch 2.8.0 with CUDA 12.8, reuse that
+package instead of running `uv sync`:
+
+```bash
+uv venv --system-site-packages --python python3 runpod-venv
+uv pip install --python runpod-venv/bin/python \
+  "transformers>=4.51.0,<6" \
+  "math-verify[antlr4_13_2]==0.9.0" \
+  "pyyaml>=6.0.2,<7"
+runpod-venv/bin/python benchmark_math500.py --config benchmark_config.yaml
+```
+
 Run a short smoke test in a separate output directory:
 
 ```bash
